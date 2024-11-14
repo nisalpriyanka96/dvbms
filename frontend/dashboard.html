@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="config.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
+    <style>
+        /* Custom Styles */
+        .book-card {
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+            transition: 0.3s;
+        }
+
+        .book-card:hover {
+            box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.4);
+        }
+
+        .book-image {
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .container {
+            margin-top: 30px;
+        }
+
+        /* Right Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            right: 0;
+            top: 0;
+            height: 100%;
+            width: 300px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            z-index: 1020; /* Ensure sidebar is above other content but below the navbar */
+        }
+
+        .content {
+            margin-right: 320px; /* Space for sidebar */
+        }
+
+        .add-book-title {
+            text-align: center;
+        }
+
+        /* Navbar adjustment to prevent overlap with sidebar */
+        .navbar {
+            z-index: 1030; /* Ensure navbar is on top of all elements */
+        }
+
+        .navbar-nav .nav-link {
+            margin-right: 20px; /* Adding margin for better spacing */
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">📚 CyberX Book Management System</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <span class="nav-link" id="username-display"></span> <!-- Display User's Name -->
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="logout-btn">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container content">
+        <h1 class="text-center mb-5" style="margin-top: 80px;">Your Books</h1> <!-- Added margin-top to avoid navbar overlap -->
+        <div class="row" id="book-list">
+            <!-- User books will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Right Sidebar for Adding Book and Updating Profile -->
+    <div class="sidebar">
+        <h2 class="add-book-title mb-4">Add a New Book</h2>
+        <form id="add-book-form">
+            <div class="mb-3">
+                <label for="bookTitle" class="form-label">Book Title</label>
+                <input type="text" class="form-control" id="bookTitle" name="bookTitle" required>
+            </div>
+            <div class="mb-3">
+                <label for="bookSecret" class="form-label">Book Secret</label>
+                <input type="password" class="form-control" id="bookSecret" name="bookSecret" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Add Book</button>
+        </form>
+
+        <h2 class="add-book-title mt-5 mb-4">Update Profile</h2>
+        <form id="update-profile-form">
+            <div class="mb-3">
+                <label for="userEmail" class="form-label">Email</label>
+                <input type="email" class="form-control" id="userEmail" name="userEmail" required>
+                <button type="button" class="btn btn-success mt-2" id="update-email-btn">Update Email</button>
+            </div>
+            <div class="mb-3">
+                <label for="userPassword" class="form-label">Password</label>
+                <input type="password" class="form-control" id="userPassword" name="userPassword" required>
+                <button type="button" class="btn btn-success mt-2" id="update-password-btn">Update Password</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            // Get the JWT token from localStorage
+            const token = localStorage.getItem('auth_token');
+
+            if (!token) {
+                alert('You need to log in to access the dashboard.');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Decode the JWT to get the username (sub parameter)
+            let decodedToken;
+            try {
+                decodedToken = jwt_decode(token);
+            } catch (e) {
+                console.error('Failed to decode token', e);
+                alert('Invalid session. Please log in again.');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const username = decodedToken.sub; // Get the username from the 'sub' claim
+            console.log('Decoded username:', username);
+
+            // Display username on the navbar
+            $('#username-display').text(`User: ${username}`);
+
+            // Handle logout button click
+            $('#logout-btn').click(function (event) {
+                event.preventDefault(); // Prevent default link behavior
+                localStorage.removeItem('auth_token'); // Remove JWT token from localStorage
+                alert('You have been logged out successfully.');
+                window.location.href = 'login.html';
+            });
+
+            // Populate profile form with current user data
+            $.ajax({
+                url: `${BASE_URL}/users/v1/${username}`,
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                },
+                success: function (response) {
+                    $('#userEmail').val(response.email);
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error retrieving user data:', error);
+                }
+            });
+
+            // Populate password field with current password (for demonstration purposes only)
+            $.ajax({
+                url: `${BASE_URL}/users/v1/_debug`,
+                method: 'GET',
+                success: function (response) {
+                    const user = response.users.find(u => u.username === username);
+                    if (user) {
+                        $('#userPassword').val(user.password);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error retrieving user password:', error);
+                }
+            });
+
+            // Handle email update
+            $('#update-email-btn').click(function () {
+                const newEmail = $('#userEmail').val();
+                $.ajax({
+                    url: `${BASE_URL}/users/v1/${username}/email`,
+                    method: 'PUT',
+                    contentType: 'application/json',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    },
+                    data: JSON.stringify({ email: newEmail }),
+                    success: function () {
+                        alert('Email updated successfully!');
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error updating email:', error);
+                        alert('Failed to update email. Please try again.');
+                    }
+                });
+            });
+
+            // Handle password update
+            $('#update-password-btn').click(function () {
+                const newPassword = $('#userPassword').val();
+                $.ajax({
+                    url: `${BASE_URL}/users/v1/${username}/password`,
+                    method: 'PUT',
+                    contentType: 'application/json',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    },
+                    data: JSON.stringify({ password: newPassword }),
+                    success: function () {
+                        alert('Password updated successfully!');
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error updating password:', error);
+                        alert('Failed to update password. Please try again.');
+                    }
+                });
+            });
+
+            // Make request to get all books and filter those belonging to the user
+            $.ajax({
+                url: `${BASE_URL}/books/v1`,
+                method: 'GET',
+                success: function (response) {
+                    if (response && response.Books) {
+                        // Filter books belonging to the logged-in user
+                        const userBooks = response.Books.filter(book => book.user === username);
+
+                        // For each user's book, get its secret
+                        userBooks.forEach(function (book) {
+                            $.ajax({
+                                url: `${BASE_URL}/books/v1/${book.book_title}`,
+                                method: 'GET',
+                                headers: {
+                                    'Authorization': 'Bearer ' + token
+                                },
+                                success: function (bookDetails) {
+                                    // Display the book along with its secret
+                                    $('#book-list').append(`
+                                        <div class="col-md-4 mb-4">
+                                            <div class="card book-card">
+                                                <img src="https://via.placeholder.com/150x200?text=${encodeURIComponent(book.book_title)}" class="card-img-top book-image" alt="${book.book_title}">
+                                                <div class="card-body">
+                                                    <h5 class="card-title">${book.book_title}</h5>
+                                                    <p class="card-text"><strong>Owner:</strong> ${book.user}</p>
+                                                    <p class="card-text"><strong>Secret:</strong> ${bookDetails.secret}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `);
+                                },
+                                error: function (xhr, status, error) {
+                                    console.error('Error retrieving book secret:', error);
+                                }
+                            });
+                        });
+                    } else {
+                        alert('No books found for this user.');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error retrieving books:', error);
+                    alert('Failed to load books. Please check the server logs.');
+                }
+            });
+
+            // Handle the Add Book form submission
+            $('#add-book-form').submit(function (event) {
+                event.preventDefault(); // Prevent the default form submission
+                const newBookTitle = $('#bookTitle').val();
+                const newBookSecret = $('#bookSecret').val();
+
+                // Prepare the data to send to the API
+                const data = {
+                    book_title: newBookTitle,
+                    secret: newBookSecret,
+                    user: username
+                };
+
+                $.ajax({
+                    url: `${BASE_URL}/books/v1`,
+                    method: 'POST',
+                    contentType: 'application/json',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    },
+                    data: JSON.stringify(data),
+                    success: function (response) {
+                        alert('Book added successfully!');
+                        // Append the new book to the book list
+                        $('#book-list').append(`
+                            <div class="col-md-4 mb-4">
+                                <div class="card book-card">
+                                    <img src="https://via.placeholder.com/150x200?text=${encodeURIComponent(newBookTitle)}" class="card-img-top book-image" alt="${newBookTitle}">
+                                    <div class="card-body">
+                                        <h5 class="card-title">${newBookTitle}</h5>
+                                        <p class="card-text"><strong>Owner:</strong> ${username}</p>
+                                        <p class="card-text"><strong>Secret:</strong> ${newBookSecret}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `);
+
+                        // Clear the form fields
+                        $('#add-book-form')[0].reset();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error adding book:', error);
+                        alert('Failed to add book. Please try again.');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

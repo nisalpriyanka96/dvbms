@@ -1,4 +1,4 @@
-# Damn Vulnerable Book Management API (DVBMA)
+# Damn Vulnerable Book Management System (DVBMS)
 **The Vulnerable API** *(Based on VAMPI)*
 
 ![DVBMA](https://i.imgur.com/wylr9Rl.png)

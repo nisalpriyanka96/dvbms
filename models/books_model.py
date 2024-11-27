@@ -10,6 +10,7 @@ class Book(db.Model):
     secret_content = db.Column(db.String(128), nullable=False)
 
     user_id = db.Column(db.Integer, ForeignKey('users.id'))
+    
     user = relationship("User", back_populates="books")
 
     def __init__(self, book_title, secret_content, user_id=user_id):
@@ -21,7 +22,10 @@ class Book(db.Model):
         return f"<User(book_title={self.book_title}, user={self.user})>"
 
     def json(self):
-        return {'book_title': self.book_title, 'user': self.user.username}
+        try:
+            return {'book_title': self.book_title, 'user': self.user.username}
+        except Exception as e:
+            return {'book_title': self.book_title, 'user': 'USER NOT FOUND'}
 
     @staticmethod
     def get_all_books():

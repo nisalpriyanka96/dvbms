@@ -20,11 +20,11 @@ A quick rundown of the actions included can be seen in the following table:
 | **Action** |            **Path**           |                     **Details**                    |
 |:----------:|:-----------------------------:|:--------------------------------------------------:|
 |     GET    |           /createdb           | Creates and populates the database with dummy data |
-|     GET    |               /               |                     VAmPI home                     |
+|     GET    |               /               |                      Home                     |
 |     GET    |           /users/v1           |      Displays all users with basic information     |
 |     GET    |        /users/v1/_debug       |         Displays all details for all users         |
 |    POST    |       /users/v1/register      |                  Register new user                 |
-|    POST    |        /users/v1/login        |                   Login to VAmPI                   |
+|    POST    |        /users/v1/login        |                   Login to Book Management System                   |
 |     GET    |      /users/v1/{username}     |              Displays user by username             |
 |   DELETE   |      /users/v1/{username}     |       Deletes user by username (Only Admins)       |
 |     PUT    |   /users/v1/{username}/email  |             Update a single users email            |
